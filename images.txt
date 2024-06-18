@@ -1,7 +1,7 @@
 nginx
 alpine
 python:latest
-python:alpine3.19
+python:3.10.14
 vaultwarden/server:latest
 esirpg/buddha
 
