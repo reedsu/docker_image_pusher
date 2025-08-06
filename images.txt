@@ -7,6 +7,10 @@ esirpg/buddha
 cooderl/wewe-rss-sqlite:latest
 homeassistant/home-assistant:latest
 linuxserver/ffmpeg
+teslamate/teslamate:latest
+postgres:17
+teslamate/grafana:latest
+eclipse-mosquitto:2
 
 #支持私库
 #k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0
