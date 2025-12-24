@@ -2,6 +2,7 @@ nginx
 alpine
 python:latest
 python:3.10.14
+python:3.10-slim
 vaultwarden/server:latest
 esirpg/buddha
 cooderl/wewe-rss-sqlite:latest
