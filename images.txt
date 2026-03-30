@@ -13,6 +13,7 @@ postgres:17
 teslamate/grafana:latest
 eclipse-mosquitto:2
 qmcgaw/gluetun
+1panel/openclaw:latest
 
 #支持私库
 #k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0
