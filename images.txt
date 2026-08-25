@@ -4,3 +4,21 @@ k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.0.0
 xhofe/alist:latest
 #支持指定架构
 --platform=linux/arm64 xiaoyaliu/alist
+
+alpine
+python:latest
+python:3.10.14
+python:3.10-slim
+python:3.11-slim
+vaultwarden/server:latest
+esirpg/buddha
+cooderl/wewe-rss-sqlite:latest
+homeassistant/home-assistant:latest
+linuxserver/ffmpeg
+teslamate/teslamate:latest
+postgres:17
+teslamate/grafana:latest
+eclipse-mosquitto:2
+qmcgaw/gluetun
+1panel/openclaw:latest
+nousresearch/hermes-agent:latest
