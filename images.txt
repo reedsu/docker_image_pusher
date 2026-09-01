@@ -21,4 +21,5 @@ teslamate/grafana:latest
 eclipse-mosquitto:2
 qmcgaw/gluetun
 1panel/openclaw:latest
+openclaw/openclaw:latest-browser
 nousresearch/hermes-agent:latest
