@@ -25,29 +25,89 @@ jobs:
         df -hT
         echo "=============================================================================="
 
-    # 增加可用磁盘空间
+    - name: 清理原有配置中不需要的软件
+      run: |
+        set -euo pipefail
+        sudo rm -rf /usr/share/dotnet /opt/ghc
+
+    - name: 检查磁盘布局
+      id: disk
+      run: |
+        set -euo pipefail
+        root_device=$(stat -c %d /)
+        storage_driver=$(docker info --format '{{.Driver}}')
+        if [[ ! "$root_device" =~ ^[0-9]+$ ]]; then
+          echo "::error::无法识别根文件系统，停止运行"
+          exit 1
+        fi
+        maximize=false
+        if [[ -d /mnt ]]; then
+          temp_device=$(stat -c %d /mnt)
+          if [[ ! "$temp_device" =~ ^[0-9]+$ ]]; then
+            echo "::error::无法识别临时文件系统，停止运行"
+            exit 1
+          fi
+          if [[ "$root_device" != "$temp_device" && "$storage_driver" == overlay2 ]]; then
+            temp_type=$(findmnt -n -o FSTYPE --target /mnt)
+            if [[ "$temp_type" == ext4 || "$temp_type" == xfs ]]; then
+              root_free_kb=$(df -k --output=avail / | awk 'NR == 2 {print $1}')
+              temp_free_kb=$(df -k --output=avail /mnt | awk 'NR == 2 {print $1}')
+              if [[ ! "$root_free_kb" =~ ^[0-9]+$ || ! "$temp_free_kb" =~ ^[0-9]+$ ]]; then
+                echo "::error::无法读取磁盘可用空间，停止运行"
+                exit 1
+              fi
+              # 根分区预留 8 GiB，临时分区预留 1 GiB，并保证各自至少还能分配 1 GiB。
+              if (( root_free_kb >= 9 * 1024 * 1024 && temp_free_kb >= 2 * 1024 * 1024 )); then
+                maximize=true
+              else
+                echo "独立文件系统余量不足，沿用原始存储布局"
+              fi
+            else
+              echo "临时文件系统类型不适合扩容，沿用原始存储布局"
+            fi
+          else
+            echo "未同时满足独立文件系统和 overlay2 存储条件，跳过磁盘合并"
+          fi
+        else
+          echo "/mnt 不存在，沿用原始存储布局"
+        fi
+        echo "maximize=$maximize" >> "$GITHUB_OUTPUT"
+
+    # 仅在独立文件系统和已验证的 overlay2 存储条件下合并空间。
     - name: Maximize build space
-      uses: easimon/maximize-build-space@master
+      if: ${{ steps.disk.outputs.maximize == 'true' }}
+      uses: easimon/maximize-build-space@c28619d8999a147d5e09c1199f84ff6af6ad5794
       with:
 
         root-reserve-mb: 8192
+        temp-reserve-mb: 1024
         swap-size-mb: 128
-        remove-dotnet: 'true'
-        remove-haskell: 'true'
-        # 如果空间还是不够用，可以把以下开启，清理出更多空间
-        # remove-android: 'true'
-        # remove-codeql: 'true'
         build-mount-path: '/var/lib/docker/'
 
     - name: Restart docker
+      if: ${{ steps.disk.outputs.maximize == 'true' }}
       run: sudo service docker restart
 
-    - name: Free up disk space complete
+    - name: 核验实际磁盘余量
       run: |
-        echo "Free up disk space complete"
-        echo "=============================================================================="
-        df -hT
-        echo "=============================================================================="
+        set -euo pipefail
+        root_free_kb=$(df -k --output=avail / | awk 'NR == 2 {print $1}')
+        if [[ ! "$root_free_kb" =~ ^[0-9]+$ ]]; then
+          echo "::error::无法读取根分区可用空间，停止运行"
+          exit 1
+        fi
+        if (( root_free_kb < 8 * 1024 * 1024 )); then
+          echo "::error::根分区实际可用空间不足 8 GiB，停止镜像转存"
+          exit 1
+        fi
+        docker info --format 'DockerRootDir={{.DockerRootDir}} StorageDriver={{.Driver}}'
+        df -hT /
+        for storage_path in /var/lib/docker /var/lib/containerd; do
+          if [[ -d "$storage_path" ]]; then
+            df -hT "$storage_path"
+          fi
+        done
+        df -i /
 
     - name: Checkout Code
       uses: actions/checkout@v4
