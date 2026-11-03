@@ -16,7 +16,7 @@ jobs:
 
   build:
     name: Pull
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Before freeing up disk space
       run: |
@@ -30,7 +30,7 @@ jobs:
       uses: easimon/maximize-build-space@master
       with:
 
-        root-reserve-mb: 2048
+        root-reserve-mb: 8192
         swap-size-mb: 128
         remove-dotnet: 'true'
         remove-haskell: 'true'
@@ -51,9 +51,6 @@ jobs:
 
     - name: Checkout Code
       uses: actions/checkout@v4
-
-    - name: Docker Setup Buildx
-      uses: docker/setup-buildx-action@v3
 
     - name: Build and push image Aliyun
       run: |
